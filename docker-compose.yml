@@ -86,9 +86,9 @@ services:
       - source: com.nginx.proxy_buffer.conf
         target: /etc/nginx/conf.d/proxy_buffer.conf
     # uncomment these after uncommenting the ones below in the root level
-      # - com.nginx.ssl_certificate
-    # secrets:
-      # - com.nginx.ssl_certificate_key
+      - com.nginx.ssl_certificate
+    secrets:
+      - com.nginx.ssl_certificate_key
 
 networks:
   ldap-network:
@@ -123,18 +123,18 @@ configs:
   org.opendatakit.sync-web-ui.application.properties:
     file: ./config/web-ui/application.properties
   com.nginx.sync-endpoint.conf:
-    file: ./config/nginx/sync-endpoint-http.conf
+    file: ./config/nginx/sync-endpoint-https.conf
   com.nginx.proxy_buffer.conf:
     file: ./config/nginx/proxy_buffer.conf
-  # com.nginx.ssl_certificate:
-    # external:
-      # name: NAME OF CONFIG
+  com.nginx.ssl_certificate:
+    external:
+      name: ekichabi-odk.fullchain.pem
 
 secrets:
   org.opendatakit.aggregate.security.properties:
     file: ./config/sync-endpoint/security.properties
   org.opendatakit.aggregate.jdbc.properties:
     file: ./config/sync-endpoint/jdbc.properties
-  # com.nginx.ssl_certificate_key:
-    # external: 
-      # name: NAME OF SECRET
+  com.nginx.ssl_certificate_key:
+    external: 
+      name: ekichabi-odk.privkey.pem

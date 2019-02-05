@@ -1,33 +1,35 @@
 version: "3.3"
 
 services: 
-  ldap-service:
-    image: odk/openldap
-    deploy:
-      replicas: 1
-    networks: 
-      - ldap-network
-    volumes:
-      - ldap-vol:/var/lib/ldap
-      - ldap-slapd.d-vol:/etc/ldap/slapd.d
-    env_file:
-      - ldap.env
-  phpldapadmin:
-    image: odk/phpldapadmin
-    deploy:
-      replicas: 1
-    ports:
-      - "${PHP_LDAPADMIN_PORT:-40000}:443"
-    networks: 
-      - ldap-network
-    env_file:
-      - ldap.env
+  # ldap-service:
+  #   image: odk/openldap
+  #   deploy:
+  #     replicas: 1
+  #   networks: 
+  #     - ldap-network
+  #   volumes:
+  #     - ldap-vol:/var/lib/ldap
+  #     - ldap-slapd.d-vol:/etc/ldap/slapd.d
+  #   env_file:
+  #     - ldap.env
+  # phpldapadmin:
+  #   image: odk/phpldapadmin
+  #   deploy:
+  #     replicas: 1
+  #   ports:
+  #     - "${PHP_LDAPADMIN_PORT:-40011}:443"
+  #   networks: 
+  #     - ldap-network
+  #   env_file:
+  #     - ldap.env
   db:
     image: postgres:9.6
     deploy:
       replicas: 1
     networks:
       - db-network
+    # ports:
+    #   - "5432:5432"
     volumes:
       - db-vol:/var/lib/postgresql/data
     env_file:
@@ -72,30 +74,27 @@ services:
       - sync-network
     hostname: web-ui
     configs:
-      - org.opendatakit.sync-web-ui.application.properties
+      - source: org.opendatakit.sync-web-ui.app.properties
+        target: /org.opendatakit.sync-web-ui.application.properties
   nginx:
-    image: nginx:1.13
+    image: nginx:mainline
     networks:
       - sync-network
     ports:
-      - "80:80"
-      - "443:443"
+      - "30015:30015"
     configs:
       - source: com.nginx.sync-endpoint.conf
         target: /etc/nginx/conf.d/default.conf
       - source: com.nginx.proxy_buffer.conf
         target: /etc/nginx/conf.d/proxy_buffer.conf
-    # uncomment these after uncommenting the ones below in the root level
-      # - com.nginx.ssl_certificate
-    # secrets:
-      # - com.nginx.ssl_certificate_key
+      - com.nginx.ssl_certificate
+    secrets:
+      - com.nginx.ssl_certificate_key
 
 networks:
   ldap-network:
-    driver: overlay
-    driver_opts:
-      encrypted: ""
-    internal: true
+    external:
+      name: odk-testing-ldap-network
   db-network:
     driver: overlay
     driver_opts:
@@ -110,8 +109,12 @@ networks:
 volumes:
   db-vol: # preserve db
   # these 2 need to be removed together
-  ldap-vol: # preserve ldap db
-  ldap-slapd.d-vol: # preserve ldap settings
+  # ldap-vol: 
+  #   external:
+  #     name: syncldap_ldap-vol
+  # ldap-slapd.d-vol: # preserve ldap settings
+  #   external:
+  #     name: syncldap_ldap-slapd.d-vol
 
 configs:
   # uncomment this to import a CA certificate into the Sync service
@@ -120,21 +123,21 @@ configs:
   # uncomment this to override logging configuration
   # org.opendatakit.aggregate.logging.properties:
     # file: ./logging.properties
-  org.opendatakit.sync-web-ui.application.properties:
+  org.opendatakit.sync-web-ui.app.properties:
     file: ./config/web-ui/application.properties
   com.nginx.sync-endpoint.conf:
-    file: ./config/nginx/sync-endpoint-http.conf
+    file: ./config/nginx/sync-endpoint-https.conf
   com.nginx.proxy_buffer.conf:
     file: ./config/nginx/proxy_buffer.conf
-  # com.nginx.ssl_certificate:
-    # external:
-      # name: NAME OF CONFIG
+  com.nginx.ssl_certificate:
+    external:
+      name: odkdemo.gr.fullchain.pem
 
 secrets:
   org.opendatakit.aggregate.security.properties:
     file: ./config/sync-endpoint/security.properties
   org.opendatakit.aggregate.jdbc.properties:
     file: ./config/sync-endpoint/jdbc.properties
-  # com.nginx.ssl_certificate_key:
-    # external: 
-      # name: NAME OF SECRET
+  com.nginx.ssl_certificate_key:
+    external: 
+      name: odkdemo.gr.privkey.pem

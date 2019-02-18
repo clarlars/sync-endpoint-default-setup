@@ -72,7 +72,7 @@ services:
     image: odk/sync-web-ui
     networks:
       - sync-network
-    hostname: web-ui
+    hostname: web-ui-3
     configs:
       - source: org.opendatakit.sync-web-ui.app.properties
         target: /org.opendatakit.sync-web-ui.application.properties
